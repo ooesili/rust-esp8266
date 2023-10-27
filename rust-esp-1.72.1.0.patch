@@ -1,0 +1,2003 @@
+diff --git a/.github/workflows/issue_handler.yml b/.github/workflows/issue_handler.yml
+new file mode 100644
+index 00000000000..978e80428ce
+--- /dev/null
++++ b/.github/workflows/issue_handler.yml
+@@ -0,0 +1,16 @@
++name: Add new issues to project
++
++on:
++  issues:
++    types:
++      - opened
++
++jobs:
++  add-to-project:
++    name: Add issue to project
++    runs-on: ubuntu-latest
++    steps:
++      - uses: actions/add-to-project@v0.5.0
++        with:
++          project-url: https://github.com/orgs/esp-rs/projects/2
++          github-token: ${{ secrets.PAT }}
+diff --git a/README.md b/README.md
+index 8a6c559b0b3..bc467072f0f 100644
+--- a/README.md
++++ b/README.md
+@@ -1,281 +1,25 @@
+-# The Rust Programming Language
++# The Rust Programming Language for Espressif chips
+ 
+-[![Rust Community](https://img.shields.io/badge/Rust_Community%20-Join_us-brightgreen?style=plastic&logo=rust)](https://www.rust-lang.org/community)
++This fork enables projects to be built for the Xtensa-based ESP32, ESP32-SXX and ESP8266 using [Espressif's llvm fork](https://github.com/espressif/llvm-project). (RiscV chips like ESP32-CXX are already supported in stock Rust.)
+ 
+-This is the main source code repository for [Rust]. It contains the compiler,
+-standard library, and documentation.
++Moreover, this fork enables Rust STD support (networking, threads, and filesystem) for all chips in the ESP32 family (Xtensa and RiscV), by optionally linking with the ESP-IDF framework.
+ 
+-[Rust]: https://www.rust-lang.org/
++The [esp-rs](https://github.com/esp-rs) organization has been formed to develop runtime, pac and hal crates for the Espressif chips (bare-metal as well as ESP-IDF based).
+ 
+-**Note: this README is for _users_ rather than _contributors_.**
+-If you wish to _contribute_ to the compiler, you should read
+-[CONTRIBUTING.md](CONTRIBUTING.md) instead.
++Join in on the discussion: https://matrix.to/#/#esp-rs:matrix.org!
+ 
+-## Quick Start
++## Installation
+ 
+-Read ["Installation"] from [The Book].
++Please see the most up to date instructions in the [esp rust book](https://esp-rs.github.io/book/).
+ 
+-["Installation"]: https://doc.rust-lang.org/book/ch01-01-installation.html
+-[The Book]: https://doc.rust-lang.org/book/index.html
++## Building from source
+ 
+-## Installing from Source
++If you wish to build this fork from source, the instructions are almost identical to the ones upstream ([follow here](https://github.com/rust-lang/rust#installing-from-source)), however before beginning the build, run the following `./configure` command:
+ 
+-The Rust build system uses a Python script called `x.py` to build the compiler,
+-which manages the bootstrapping process. It lives at the root of the project.
+-It also uses a file named `config.toml` to determine various configuration
+-settings for the build. You can see a full list of options in
+-`config.example.toml`.
+-
+-The `x.py` command can be run directly on most Unix systems in the following
+-format:
+-
+-```sh
+-./x.py <subcommand> [flags]
+-```
+-
+-This is how the documentation and examples assume you are running `x.py`.
+-See the [rustc dev guide][rustcguidebuild] if this does not work on your
+-platform.
+-
+-More information about `x.py` can be found by running it with the `--help` flag
+-or reading the [rustc dev guide][rustcguidebuild].
+-
+-[gettingstarted]: https://rustc-dev-guide.rust-lang.org/getting-started.html
+-[rustcguidebuild]: https://rustc-dev-guide.rust-lang.org/building/how-to-build-and-run.html#what-is-xpy
+-
+-### Dependencies
+-
+-Make sure you have installed the dependencies:
+-
+-* `python` 3 or 2.7
+-* `git`
+-* A C compiler (when building for the host, `cc` is enough; cross-compiling may
+-  need additional compilers)
+-* `curl` (not needed on Windows)
+-* `pkg-config` if you are compiling on Linux and targeting Linux
+-* `libiconv` (already included with glibc on Debian-based distros)
+-
+-To build Cargo, you'll also need OpenSSL (`libssl-dev` or `openssl-devel` on
+-most Unix distros).
+-
+-If building LLVM from source, you'll need additional tools:
+-
+-* `g++`, `clang++`, or MSVC with versions listed on
+-  [LLVM's documentation](https://llvm.org/docs/GettingStarted.html#host-c-toolchain-both-compiler-and-standard-library)
+-* `ninja`, or GNU `make` 3.81 or later (Ninja is recommended, especially on
+-  Windows)
+-* `cmake` 3.13.4 or later
+-* `libstdc++-static` may be required on some Linux distributions such as Fedora
+-  and Ubuntu
+-
+-On tier 1 or tier 2 with host tools platforms, you can also choose to download
+-LLVM by setting `llvm.download-ci-llvm = true`.
+-Otherwise, you'll need LLVM installed and `llvm-config` in your path.
+-See [the rustc-dev-guide for more info][sysllvm].
+-
+-[sysllvm]: https://rustc-dev-guide.rust-lang.org/building/new-target.html#using-pre-built-llvm
+-
+-
+-### Building on a Unix-like system
+-
+-#### Build steps
+-
+-1. Clone the [source] with `git`:
+-
+-   ```sh
+-   git clone https://github.com/rust-lang/rust.git
+-   cd rust
+-   ```
+-
+-[source]: https://github.com/rust-lang/rust
+-
+-2. Configure the build settings:
+-
+-   ```sh
+-   ./configure
+-   ```
+-
+-   If you plan to use `x.py install` to create an installation, it is
+-   recommended that you set the `prefix` value in the `[install]` section to a
+-   directory: `./configure --set install.prefix=<path>`
+-
+-3. Build and install:
+-
+-   ```sh
+-   ./x.py build && ./x.py install
+-   ```
+-
+-   When complete, `./x.py install` will place several programs into
+-   `$PREFIX/bin`: `rustc`, the Rust compiler, and `rustdoc`, the
+-   API-documentation tool. By default, it will also include [Cargo], Rust's
+-   package manager. You can disable this behavior by passing
+-   `--set build.extended=false` to `./configure`.
+-
+-[Cargo]: https://github.com/rust-lang/cargo
+-
+-#### Configure and Make
+-
+-This project provides a configure script and makefile (the latter of which just
+-invokes `x.py`). `./configure` is the recommended way to programatically
+-generate a `config.toml`. `make` is not recommended (we suggest using `x.py`
+-directly), but it is supported and we try not to break it unnecessarily.
+-
+-```sh
+-./configure
+-make && sudo make install
+-```
+-
+-`configure` generates a `config.toml` which can also be used with normal `x.py`
+-invocations.
+-
+-### Building on Windows
+-
+-On Windows, we suggest using [winget] to install dependencies by running the
+-following in a terminal:
+-
+-```powershell
+-winget install -e Python.Python.3
+-winget install -e Kitware.CMake
+-winget install -e Git.Git
+-```
+-
+-Then edit your system's `PATH` variable and add: `C:\Program Files\CMake\bin`.
+-See
+-[this guide on editing the system `PATH`](https://www.java.com/en/download/help/path.html)
+-from the Java documentation.
+-
+-[winget]: https://github.com/microsoft/winget-cli
+-
+-There are two prominent ABIs in use on Windows: the native (MSVC) ABI used by
+-Visual Studio and the GNU ABI used by the GCC toolchain. Which version of Rust
+-you need depends largely on what C/C++ libraries you want to interoperate with.
+-Use the MSVC build of Rust to interop with software produced by Visual Studio
+-and the GNU build to interop with GNU software built using the MinGW/MSYS2
+-toolchain.
+-
+-#### MinGW
+-
+-[MSYS2][msys2] can be used to easily build Rust on Windows:
+-
+-[msys2]: https://www.msys2.org/
+-
+-1. Download the latest [MSYS2 installer][msys2] and go through the installer.
+-
+-2. Run `mingw32_shell.bat` or `mingw64_shell.bat` from the MSYS2 installation
+-   directory (e.g. `C:\msys64`), depending on whether you want 32-bit or 64-bit
+-   Rust. (As of the latest version of MSYS2 you have to run `msys2_shell.cmd
+-   -mingw32` or `msys2_shell.cmd -mingw64` from the command line instead.)
+-
+-3. From this terminal, install the required tools:
+-
+-   ```sh
+-   # Update package mirrors (may be needed if you have a fresh install of MSYS2)
+-   pacman -Sy pacman-mirrors
+-
+-   # Install build tools needed for Rust. If you're building a 32-bit compiler,
+-   # then replace "x86_64" below with "i686". If you've already got Git, Python,
+-   # or CMake installed and in PATH you can remove them from this list.
+-   # Note that it is important that you do **not** use the 'python2', 'cmake',
+-   # and 'ninja' packages from the 'msys2' subsystem.
+-   # The build has historically been known to fail with these packages.
+-   pacman -S git \
+-               make \
+-               diffutils \
+-               tar \
+-               mingw-w64-x86_64-python \
+-               mingw-w64-x86_64-cmake \
+-               mingw-w64-x86_64-gcc \
+-               mingw-w64-x86_64-ninja
+-   ```
+-
+-4. Navigate to Rust's source code (or clone it), then build it:
+-
+-   ```sh
+-   python x.py setup user && python x.py build && python x.py install
+-   ```
+-
+-#### MSVC
+-
+-MSVC builds of Rust additionally require an installation of Visual Studio 2017
+-(or later) so `rustc` can use its linker. The simplest way is to get
+-[Visual Studio], check the "C++ build tools" and "Windows 10 SDK" workload.
+-
+-[Visual Studio]: https://visualstudio.microsoft.com/downloads/
+-
+-(If you're installing CMake yourself, be careful that "C++ CMake tools for
+-Windows" doesn't get included under "Individual components".)
+-
+-With these dependencies installed, you can build the compiler in a `cmd.exe`
+-shell with:
+-
+-```sh
+-python x.py setup user
+-python x.py build
+ ```
+-
+-Right now, building Rust only works with some known versions of Visual Studio.
+-If you have a more recent version installed and the build system doesn't
+-understand, you may need to force rustbuild to use an older version.
+-This can be done by manually calling the appropriate vcvars file before running
+-the bootstrap.
+-
+-```batch
+-CALL "C:\Program Files (x86)\Microsoft Visual Studio\2019\Community\VC\Auxiliary\Build\vcvars64.bat"
+-python x.py build
++./configure --experimental-targets=Xtensa --release-channel=nightly --enable-extended --tools=clippy,cargo,rustfmt --enable-lld
+ ```
+ 
+-#### Specifying an ABI
+-
+-Each specific ABI can also be used from either environment (for example, using
+-the GNU ABI in PowerShell) by using an explicit build triple. The available
+-Windows build triples are:
+-- GNU ABI (using GCC)
+-    - `i686-pc-windows-gnu`
+-    - `x86_64-pc-windows-gnu`
+-- The MSVC ABI
+-    - `i686-pc-windows-msvc`
+-    - `x86_64-pc-windows-msvc`
+-
+-The build triple can be specified by either specifying `--build=<triple>` when
+-invoking `x.py` commands, or by creating a `config.toml` file (as described in
+-[Building on a Unix-like system](#building-on-a-unix-like-system)), and passing
+-`--set build.build=<triple>` to `./configure`.
+-
+-## Building Documentation
+-
+-If you'd like to build the documentation, it's almost the same:
+-
+-```sh
+-./x.py doc
+-```
+-
+-The generated documentation will appear under `doc` in the `build` directory for
+-the ABI used. That is, if the ABI was `x86_64-pc-windows-msvc`, the directory
+-will be `build\x86_64-pc-windows-msvc\doc`.
+-
+-## Notes
+-
+-Since the Rust compiler is written in Rust, it must be built by a precompiled
+-"snapshot" version of itself (made in an earlier stage of development).
+-As such, source builds require an Internet connection to fetch snapshots, and an
+-OS that can execute the available snapshot binaries.
+-
+-See https://doc.rust-lang.org/nightly/rustc/platform-support.html for a list of
+-supported platforms.
+-Only "host tools" platforms have a pre-compiled snapshot binary available; to
+-compile for a platform without host tools you must cross-compile.
+-
+-You may find that other platforms work, but these are our officially supported
+-build environments that are most likely to work.
+-
+-## Getting Help
+-
+-See https://www.rust-lang.org/community for a list of chat platforms and forums.
+-
+-## Contributing
+-
+-See [CONTRIBUTING.md](CONTRIBUTING.md).
+-
+ ## License
+ 
+ Rust is primarily distributed under the terms of both the MIT license and the
+@@ -284,18 +28,3 @@ licenses.
+ 
+ See [LICENSE-APACHE](LICENSE-APACHE), [LICENSE-MIT](LICENSE-MIT), and
+ [COPYRIGHT](COPYRIGHT) for details.
+-
+-## Trademark
+-
+-[The Rust Foundation][rust-foundation] owns and protects the Rust and Cargo
+-trademarks and logos (the "Rust Trademarks").
+-
+-If you want to use these names or brands, please read the
+-[media guide][media-guide].
+-
+-Third-party logos may be subject to third-party copyrights and trademarks. See
+-[Licenses][policies-licenses] for details.
+-
+-[rust-foundation]: https://foundation.rust-lang.org/
+-[media-guide]: https://foundation.rust-lang.org/policies/logo-policy-and-media-guide/
+-[policies-licenses]: https://www.rust-lang.org/policies/licenses
+diff --git a/compiler/rustc_codegen_gcc/src/asm.rs b/compiler/rustc_codegen_gcc/src/asm.rs
+index 4c3b7f5036c..104c623c30e 100644
+--- a/compiler/rustc_codegen_gcc/src/asm.rs
++++ b/compiler/rustc_codegen_gcc/src/asm.rs
+@@ -637,6 +637,9 @@ fn reg_to_gcc(reg: InlineAsmRegOrRegClass) -> ConstraintOrRegister {
+             InlineAsmRegClass::Wasm(WasmInlineAsmRegClass::local) => "r",
+             InlineAsmRegClass::S390x(S390xInlineAsmRegClass::reg) => "r",
+             InlineAsmRegClass::S390x(S390xInlineAsmRegClass::freg) => "f",
++            InlineAsmRegClass::Xtensa(XtensaInlineAsmRegClass::reg) => unimplemented!(),
++            InlineAsmRegClass::Xtensa(XtensaInlineAsmRegClass::freg) => unimplemented!(),
++            InlineAsmRegClass::Xtensa(XtensaInlineAsmRegClass::breg) => unimplemented!(),
+             InlineAsmRegClass::Err => unreachable!(),
+         }
+     };
+@@ -706,6 +709,9 @@ fn dummy_output_type<'gcc, 'tcx>(cx: &CodegenCx<'gcc, 'tcx>, reg: InlineAsmRegCl
+         },
+         InlineAsmRegClass::S390x(S390xInlineAsmRegClass::reg) => cx.type_i32(),
+         InlineAsmRegClass::S390x(S390xInlineAsmRegClass::freg) => cx.type_f64(),
++        InlineAsmRegClass::Xtensa(XtensaInlineAsmRegClass::reg) => cx.type_i32(),
++        InlineAsmRegClass::Xtensa(XtensaInlineAsmRegClass::freg) => cx.type_f32(),
++        InlineAsmRegClass::Xtensa(XtensaInlineAsmRegClass::breg) => cx.type_i8(), // FIXME: should this be i1?
+         InlineAsmRegClass::Err => unreachable!(),
+     }
+ }
+@@ -862,7 +868,10 @@ fn modifier_to_gcc(arch: InlineAsmArch, reg: InlineAsmRegClass, modifier: Option
+         InlineAsmRegClass::M68k(_) => None,
+         InlineAsmRegClass::SpirV(SpirVInlineAsmRegClass::reg) => {
+             bug!("LLVM backend does not support SPIR-V")
+-        }
++        },
++        InlineAsmRegClass::Xtensa(XtensaInlineAsmRegClass::reg) => unimplemented!(),
++        InlineAsmRegClass::Xtensa(XtensaInlineAsmRegClass::freg) => unimplemented!(),
++        InlineAsmRegClass::Xtensa(XtensaInlineAsmRegClass::breg) => unimplemented!(),
+         InlineAsmRegClass::Err => unreachable!(),
+     }
+ }
+diff --git a/compiler/rustc_codegen_llvm/src/asm.rs b/compiler/rustc_codegen_llvm/src/asm.rs
+index 2a6ad1be763..cc398baaaee 100644
+--- a/compiler/rustc_codegen_llvm/src/asm.rs
++++ b/compiler/rustc_codegen_llvm/src/asm.rs
+@@ -254,6 +254,7 @@ fn codegen_inline_asm(
+                 }
+                 InlineAsmArch::SpirV => {}
+                 InlineAsmArch::Wasm32 | InlineAsmArch::Wasm64 => {}
++                InlineAsmArch::Xtensa => {}
+                 InlineAsmArch::Bpf => {}
+                 InlineAsmArch::Msp430 => {
+                     constraints.push("~{sr}".to_string());
+@@ -680,6 +681,9 @@ fn reg_to_llvm(reg: InlineAsmRegOrRegClass, layout: Option<&TyAndLayout<'_>>) ->
+                 | X86InlineAsmRegClass::tmm_reg,
+             ) => unreachable!("clobber-only"),
+             InlineAsmRegClass::Wasm(WasmInlineAsmRegClass::local) => "r",
++            InlineAsmRegClass::Xtensa(XtensaInlineAsmRegClass::reg) => "r",
++            InlineAsmRegClass::Xtensa(XtensaInlineAsmRegClass::freg) => "f",
++            InlineAsmRegClass::Xtensa(XtensaInlineAsmRegClass::breg) => "b",
+             InlineAsmRegClass::Bpf(BpfInlineAsmRegClass::reg) => "r",
+             InlineAsmRegClass::Bpf(BpfInlineAsmRegClass::wreg) => "w",
+             InlineAsmRegClass::Avr(AvrInlineAsmRegClass::reg) => "r",
+@@ -739,6 +743,7 @@ fn modifier_to_llvm(
+         InlineAsmRegClass::Mips(_) => None,
+         InlineAsmRegClass::Nvptx(_) => None,
+         InlineAsmRegClass::PowerPC(_) => None,
++        InlineAsmRegClass::Xtensa(_) => None,
+         InlineAsmRegClass::RiscV(RiscVInlineAsmRegClass::reg)
+         | InlineAsmRegClass::RiscV(RiscVInlineAsmRegClass::freg) => None,
+         InlineAsmRegClass::RiscV(RiscVInlineAsmRegClass::vreg) => {
+@@ -855,6 +860,9 @@ fn dummy_output_type<'ll>(cx: &CodegenCx<'ll, '_>, reg: InlineAsmRegClass) -> &'
+             unreachable!("clobber-only")
+         }
+         InlineAsmRegClass::Wasm(WasmInlineAsmRegClass::local) => cx.type_i32(),
++        InlineAsmRegClass::Xtensa(XtensaInlineAsmRegClass::reg) => cx.type_i32(),
++        InlineAsmRegClass::Xtensa(XtensaInlineAsmRegClass::freg) => cx.type_f32(),
++        InlineAsmRegClass::Xtensa(XtensaInlineAsmRegClass::breg) => cx.type_i1(),
+         InlineAsmRegClass::Bpf(BpfInlineAsmRegClass::reg) => cx.type_i64(),
+         InlineAsmRegClass::Bpf(BpfInlineAsmRegClass::wreg) => cx.type_i32(),
+         InlineAsmRegClass::Avr(AvrInlineAsmRegClass::reg) => cx.type_i8(),
+diff --git a/compiler/rustc_codegen_ssa/src/back/metadata.rs b/compiler/rustc_codegen_ssa/src/back/metadata.rs
+index 00e6acb5c1a..77b0ba9601c 100644
+--- a/compiler/rustc_codegen_ssa/src/back/metadata.rs
++++ b/compiler/rustc_codegen_ssa/src/back/metadata.rs
+@@ -211,6 +211,7 @@ pub(crate) fn create_object_file(sess: &Session) -> Option<write::Object<'static
+         "avr" => Architecture::Avr,
+         "msp430" => Architecture::Msp430,
+         "hexagon" => Architecture::Hexagon,
++        "xtensa" => Architecture::Xtensa,
+         "bpf" => Architecture::Bpf,
+         "loongarch64" => Architecture::LoongArch64,
+         // Unsupported architecture.
+diff --git a/compiler/rustc_codegen_ssa/src/target_features.rs b/compiler/rustc_codegen_ssa/src/target_features.rs
+index 9e06fec550d..a23ecf40655 100644
+--- a/compiler/rustc_codegen_ssa/src/target_features.rs
++++ b/compiler/rustc_codegen_ssa/src/target_features.rs
+@@ -295,6 +295,35 @@
+     // tidy-alphabetical-end
+ ];
+ 
++const XTENSA_ALLOWED_FEATURES: &[(&str, Option<Symbol>)] = &[
++    ("fp", Some(sym::xtensa_target_feature)),
++    ("windowed", Some(sym::xtensa_target_feature)),
++    ("bool", Some(sym::xtensa_target_feature)),
++    ("loop", Some(sym::xtensa_target_feature)),
++    ("sext", Some(sym::xtensa_target_feature)),
++    ("nsa", Some(sym::xtensa_target_feature)),
++    ("mul32", Some(sym::xtensa_target_feature)),
++    ("mul32high", Some(sym::xtensa_target_feature)),
++    ("div32", Some(sym::xtensa_target_feature)),
++    ("mac16", Some(sym::xtensa_target_feature)),
++    ("dfpaccel", Some(sym::xtensa_target_feature)),
++    ("s32c1i", Some(sym::xtensa_target_feature)),
++    ("threadptr", Some(sym::xtensa_target_feature)),
++    ("extendedl32r", Some(sym::xtensa_target_feature)),
++    ("atomctl", Some(sym::xtensa_target_feature)),
++    ("memctl", Some(sym::xtensa_target_feature)),
++    ("debug", Some(sym::xtensa_target_feature)),
++    ("exception", Some(sym::xtensa_target_feature)),
++    ("highpriinterrupts", Some(sym::xtensa_target_feature)),
++    ("coprocessor", Some(sym::xtensa_target_feature)),
++    ("interrupt", Some(sym::xtensa_target_feature)),
++    ("rvector", Some(sym::xtensa_target_feature)),
++    ("timerint", Some(sym::xtensa_target_feature)),
++    ("prid", Some(sym::xtensa_target_feature)),
++    ("regprotect", Some(sym::xtensa_target_feature)),
++    ("miscsr", Some(sym::xtensa_target_feature)),
++];
++
+ const BPF_ALLOWED_FEATURES: &[(&str, Option<Symbol>)] = &[("alu32", Some(sym::bpf_target_feature))];
+ 
+ /// When rustdoc is running, provide a list of all known features so that all their respective
+@@ -311,6 +340,7 @@ pub fn all_known_features() -> impl Iterator<Item = (&'static str, Option<Symbol
+         .chain(MIPS_ALLOWED_FEATURES.iter())
+         .chain(RISCV_ALLOWED_FEATURES.iter())
+         .chain(WASM_ALLOWED_FEATURES.iter())
++        .chain(XTENSA_ALLOWED_FEATURES.iter())
+         .chain(BPF_ALLOWED_FEATURES.iter())
+         .cloned()
+ }
+@@ -325,6 +355,7 @@ pub fn supported_target_features(sess: &Session) -> &'static [(&'static str, Opt
+         "powerpc" | "powerpc64" => POWERPC_ALLOWED_FEATURES,
+         "riscv32" | "riscv64" => RISCV_ALLOWED_FEATURES,
+         "wasm32" | "wasm64" => WASM_ALLOWED_FEATURES,
++        "xtensa" => XTENSA_ALLOWED_FEATURES,
+         "bpf" => BPF_ALLOWED_FEATURES,
+         _ => &[],
+     }
+diff --git a/compiler/rustc_llvm/build.rs b/compiler/rustc_llvm/build.rs
+index b0783d75d47..dab9d78b497 100644
+--- a/compiler/rustc_llvm/build.rs
++++ b/compiler/rustc_llvm/build.rs
+@@ -22,6 +22,7 @@
+     "nvptx",
+     "hexagon",
+     "riscv",
++    "xtensa",
+     "bpf",
+ ];
+ 
+diff --git a/compiler/rustc_llvm/llvm-wrapper/PassWrapper.cpp b/compiler/rustc_llvm/llvm-wrapper/PassWrapper.cpp
+index c43a0272477..142d6328c7b 100644
+--- a/compiler/rustc_llvm/llvm-wrapper/PassWrapper.cpp
++++ b/compiler/rustc_llvm/llvm-wrapper/PassWrapper.cpp
+@@ -140,6 +140,12 @@ extern "C" void LLVMTimeTraceProfilerFinish(const char* FileName) {
+ #define SUBTARGET_SPARC
+ #endif
+ 
++#ifdef LLVM_COMPONENT_XTENSA
++#define SUBTARGET_XTENSA SUBTARGET(XTENSA)
++#else
++#define SUBTARGET_XTENSA
++#endif
++
+ #ifdef LLVM_COMPONENT_HEXAGON
+ #define SUBTARGET_HEXAGON SUBTARGET(Hexagon)
+ #else
+@@ -164,6 +170,7 @@ extern "C" void LLVMTimeTraceProfilerFinish(const char* FileName) {
+   SUBTARGET_MSP430                                                             \
+   SUBTARGET_SPARC                                                              \
+   SUBTARGET_HEXAGON                                                            \
++  SUBTARGET_XTENSA                                                             \
+   SUBTARGET_RISCV                                                              \
+   SUBTARGET_LOONGARCH                                                          \
+ 
+diff --git a/compiler/rustc_llvm/src/lib.rs b/compiler/rustc_llvm/src/lib.rs
+index a49ded4fd7b..9ea1d730702 100644
+--- a/compiler/rustc_llvm/src/lib.rs
++++ b/compiler/rustc_llvm/src/lib.rs
+@@ -179,6 +179,14 @@ fn init() { }
+         LLVMInitializeHexagonAsmPrinter,
+         LLVMInitializeHexagonAsmParser
+     );
++    init_target!(
++        llvm_component = "xtensa",
++        LLVMInitializeXtensaTargetInfo,
++        LLVMInitializeXtensaTarget,
++        LLVMInitializeXtensaTargetMC,
++        LLVMInitializeXtensaAsmPrinter,
++        LLVMInitializeXtensaAsmParser
++    );
+     init_target!(
+         llvm_component = "webassembly",
+         LLVMInitializeWebAssemblyTargetInfo,
+diff --git a/compiler/rustc_span/src/symbol.rs b/compiler/rustc_span/src/symbol.rs
+index 5c6d43e50ea..b7892483aa5 100644
+--- a/compiler/rustc_span/src/symbol.rs
++++ b/compiler/rustc_span/src/symbol.rs
+@@ -399,6 +399,7 @@
+         async_await,
+         async_closure,
+         async_fn_in_trait,
++        atomctl,
+         atomic,
+         atomic_mod,
+         atomics,
+@@ -439,6 +440,7 @@
+         braced_empty_structs,
+         branch,
+         breakpoint,
++        breg,
+         bridge,
+         bswap,
+         builtin_syntax,
+@@ -548,7 +550,10 @@
+         const_try,
+         constant,
+         constructor,
++        contents,
+         context,
++        convert,
++        coprocessor,
+         copy,
+         copy_closures,
+         copy_nonoverlapping,
+@@ -618,6 +623,7 @@
+         derive_default_enum,
+         destruct,
+         destructuring_assignment,
++        dfpaccel,
+         diagnostic,
+         direct,
+         discriminant_kind,
+@@ -675,6 +681,7 @@
+         ermsb_target_feature,
+         exact_div,
+         except,
++        exception,
+         exchange_malloc,
+         exclusive_range_pattern,
+         exhaustive_integer_patterns,
+@@ -692,6 +699,7 @@
+         expr,
+         extended_key_value_attributes,
+         extended_varargs_abi_support,
++        extendedl32r,
+         extern_absolute_paths,
+         extern_crate_item_prelude,
+         extern_crate_self,
+@@ -752,6 +760,7 @@
+         format_macro,
+         format_placeholder,
+         format_unsafe_arg,
++        fp,
+         freeze,
+         freg,
+         frem_fast,
+@@ -792,6 +801,7 @@
+         hash,
+         hexagon_target_feature,
+         hidden,
++        highpriinterrupts,
+         homogeneous_aggregate,
+         host,
+         html_favicon_url,
+@@ -845,6 +855,8 @@
+         instruction_set,
+         integer_: "integer",
+         integral,
++        intel,
++        interrupt,
+         into_future,
+         into_iter,
+         intra_doc_pointers,
+@@ -908,6 +920,7 @@
+         logf64,
+         loop_break_value,
+         lt,
++        mac16,
+         macro_at_most_once_rep,
+         macro_attributes_in_derive_output,
+         macro_escape,
+@@ -946,6 +959,7 @@
+         mem_variant_count,
+         mem_zeroed,
+         member_constraints,
++        memctl,
+         memory,
+         memtag,
+         message,
+@@ -963,6 +977,7 @@
+         mips_target_feature,
+         miri,
+         misc,
++        miscsr,
+         mmx_reg,
+         modifiers,
+         module,
+@@ -1134,6 +1149,7 @@
+         prelude,
+         prelude_import,
+         preserves_flags,
++        prid,
+         primitive,
+         print_macro,
+         println_macro,
+@@ -1339,7 +1355,9 @@
+         rustdoc_missing_doc_code_examples,
+         rustfmt,
+         rvalue_static_promotion,
++        rvector,
+         s,
++        s32c1i,
+         safety,
+         sanitize,
+         sanitizer_cfi_generalize_pointers,
+@@ -1517,8 +1535,10 @@
+         thread,
+         thread_local,
+         thread_local_macro,
++        threadptr,
+         thumb2,
+         thumb_mode: "thumb-mode",
++        timerint,
+         tmm_reg,
+         to_string,
+         to_vec,
+@@ -1655,6 +1675,7 @@
+         wasm_target_feature,
+         while_let,
+         width,
++        windowed,
+         windows,
+         windows_subsystem,
+         with_negative_coherence,
+@@ -1669,7 +1690,9 @@
+         writeln_macro,
+         x87_reg,
+         xer,
++        xloop,
+         xmm_reg,
++        xtensa_target_feature,
+         yeet_desugar_details,
+         yeet_expr,
+         ymm_reg,
+diff --git a/compiler/rustc_target/src/abi/call/mod.rs b/compiler/rustc_target/src/abi/call/mod.rs
+index c4abf6f4b5e..587b3c69c5e 100644
+--- a/compiler/rustc_target/src/abi/call/mod.rs
++++ b/compiler/rustc_target/src/abi/call/mod.rs
+@@ -12,6 +12,7 @@
+ mod hexagon;
+ mod loongarch;
+ mod m68k;
++mod xtensa;
+ mod mips;
+ mod mips64;
+ mod msp430;
+@@ -700,6 +701,7 @@ pub fn adjust_for_foreign_abi<C>(
+                 }
+             }
+             "hexagon" => hexagon::compute_abi_info(self),
++            "xtensa" => xtensa::compute_abi_info(cx, self),
+             "riscv32" | "riscv64" => riscv::compute_abi_info(cx, self),
+             "wasm32" | "wasm64" => {
+                 if cx.target_spec().adjust_abi(abi) == spec::abi::Abi::Wasm {
+diff --git a/compiler/rustc_target/src/abi/call/xtensa.rs b/compiler/rustc_target/src/abi/call/xtensa.rs
+new file mode 100644
+index 00000000000..74407b15ee4
+--- /dev/null
++++ b/compiler/rustc_target/src/abi/call/xtensa.rs
+@@ -0,0 +1,123 @@
++//! The Xtensa ABI implementation
++//!
++//! This ABI implementation is based on the following sources:
++//!
++//! Section 8.1.4 & 8.1.5 of the Xtensa ISA reference manual, as well as snippets from
++//! Section 2.3 from the Xtensa programmers guide.
++
++use crate::abi::call::{ArgAbi, FnAbi, Reg, Uniform};
++use crate::abi::{Abi, HasDataLayout, Size, TyAbiInterface};
++use crate::spec::HasTargetSpec;
++
++const NUM_ARG_GPRS: u64 = 6;
++const NUM_RET_GPRS: u64 = 4;
++const MAX_ARG_IN_REGS_SIZE: u64 = NUM_ARG_GPRS * 32;
++const MAX_RET_IN_REGS_SIZE: u64 = NUM_RET_GPRS * 32;
++
++fn classify_ret_ty<'a, Ty, C>(arg: &mut ArgAbi<'_, Ty>)
++where
++    Ty: TyAbiInterface<'a, C> + Copy,
++{
++    if arg.is_ignore() {
++        return;
++    }
++
++    // The rules for return and argument types are the same,
++    // so defer to `classify_arg_ty`.
++    let mut arg_gprs_left = NUM_RET_GPRS;
++    classify_arg_ty(arg, &mut arg_gprs_left, MAX_RET_IN_REGS_SIZE);
++    // Ret args cannot be passed via stack, we lower to indirect and let the backend handle the invisble reference
++    match arg.mode {
++        super::PassMode::Indirect { attrs: _, extra_attrs: _, ref mut on_stack } => {
++            *on_stack = false;
++        },
++        _ => {}
++    }
++}
++
++fn classify_arg_ty<'a, Ty, C>(arg: &mut ArgAbi<'_, Ty>, arg_gprs_left: &mut u64, max_size: u64)
++where
++    Ty: TyAbiInterface<'a, C> + Copy,
++{
++    assert!(*arg_gprs_left <= NUM_ARG_GPRS, "Arg GPR tracking underflow");
++
++    // Ignore empty structs/unions.
++    if arg.layout.is_zst() {
++        return;
++    }
++
++    let size = arg.layout.size.bits();
++    let needed_align = arg.layout.align.abi.bits();
++    let mut must_use_stack = false;
++
++    // Determine the number of GPRs needed to pass the current argument
++    // according to the ABI. 2*XLen-aligned varargs are passed in "aligned"
++    // register pairs, so may consume 3 registers.
++    let mut needed_arg_gprs = (size + 32 - 1) / 32;
++    if needed_align == 64 {
++        needed_arg_gprs += *arg_gprs_left % 2;
++    }
++
++    if needed_arg_gprs > *arg_gprs_left
++        || needed_align > 128
++        || (*arg_gprs_left < (max_size / 32) && needed_align == 128)
++    {
++        must_use_stack = true;
++        needed_arg_gprs = *arg_gprs_left;
++    }
++    *arg_gprs_left -= needed_arg_gprs;
++
++    if must_use_stack {
++        arg.make_indirect_byval();
++    } else {
++        if is_xtensa_aggregate(arg) {
++            // Aggregates which are <= max_size will be passed in
++            // registers if possible, so coerce to integers.
++
++            // Use a single `xlen` int if possible, 2 * `xlen` if 2 * `xlen` alignment
++            // is required, and a 2-element `xlen` array if only `xlen` alignment is
++            // required.
++            if size <= 32 {
++                arg.cast_to(Reg::i32());
++            } else {
++                let reg = if needed_align == 2 * 32 { Reg::i64() } else { Reg::i32() };
++                let total = Size::from_bits(((size + 32 - 1) / 32) * 32);
++                arg.cast_to(Uniform { unit: reg, total });
++            }
++        } else {
++            // All integral types are promoted to `xlen`
++            // width.
++            //
++            // We let the LLVM backend handle integral types >= xlen.
++            if size < 32 {
++                arg.extend_integer_width_to(32);
++            }
++        }
++    }
++}
++
++pub fn compute_abi_info<'a, Ty, C>(_cx: &C, fn_abi: &mut FnAbi<'a, Ty>)
++where
++    Ty: TyAbiInterface<'a, C> + Copy,
++    C: HasDataLayout + HasTargetSpec,
++{
++    if !fn_abi.ret.is_ignore() {
++        classify_ret_ty(&mut fn_abi.ret);
++    }
++
++    let mut arg_gprs_left = NUM_ARG_GPRS;
++
++    for arg in fn_abi.args.iter_mut() {
++        if arg.is_ignore() {
++            continue;
++        }
++        classify_arg_ty(arg, &mut arg_gprs_left, MAX_ARG_IN_REGS_SIZE);
++    }
++}
++
++fn is_xtensa_aggregate<'a, Ty>(arg: &ArgAbi<'a, Ty>) -> bool {
++    match arg.layout.abi {
++        Abi::Vector { .. } => true,
++        _ => arg.layout.is_aggregate(),
++    }
++}
+\ No newline at end of file
+diff --git a/compiler/rustc_target/src/asm/mod.rs b/compiler/rustc_target/src/asm/mod.rs
+index e60b8e78e5d..6709c53cbcd 100644
+--- a/compiler/rustc_target/src/asm/mod.rs
++++ b/compiler/rustc_target/src/asm/mod.rs
+@@ -179,6 +179,7 @@ macro_rules! types {
+ mod spirv;
+ mod wasm;
+ mod x86;
++mod xtensa;
+ 
+ pub use aarch64::{AArch64InlineAsmReg, AArch64InlineAsmRegClass};
+ pub use arm::{ArmInlineAsmReg, ArmInlineAsmRegClass};
+@@ -195,6 +196,7 @@ macro_rules! types {
+ pub use s390x::{S390xInlineAsmReg, S390xInlineAsmRegClass};
+ pub use spirv::{SpirVInlineAsmReg, SpirVInlineAsmRegClass};
+ pub use wasm::{WasmInlineAsmReg, WasmInlineAsmRegClass};
++pub use xtensa::{XtensaInlineAsmReg, XtensaInlineAsmRegClass};
+ pub use x86::{X86InlineAsmReg, X86InlineAsmRegClass};
+ 
+ #[derive(Copy, Clone, Encodable, Decodable, Debug, Eq, PartialEq, Hash)]
+@@ -216,6 +218,7 @@ pub enum InlineAsmArch {
+     SpirV,
+     Wasm32,
+     Wasm64,
++    Xtensa,
+     Bpf,
+     Avr,
+     Msp430,
+@@ -244,6 +247,7 @@ fn from_str(s: &str) -> Result<InlineAsmArch, ()> {
+             "spirv" => Ok(Self::SpirV),
+             "wasm32" => Ok(Self::Wasm32),
+             "wasm64" => Ok(Self::Wasm64),
++            "xtensa" => Ok(Self::Xtensa),
+             "bpf" => Ok(Self::Bpf),
+             "avr" => Ok(Self::Avr),
+             "msp430" => Ok(Self::Msp430),
+@@ -268,6 +272,7 @@ pub enum InlineAsmReg {
+     S390x(S390xInlineAsmReg),
+     SpirV(SpirVInlineAsmReg),
+     Wasm(WasmInlineAsmReg),
++    Xtensa(XtensaInlineAsmReg),
+     Bpf(BpfInlineAsmReg),
+     Avr(AvrInlineAsmReg),
+     Msp430(Msp430InlineAsmReg),
+@@ -288,6 +293,7 @@ pub fn name(self) -> &'static str {
+             Self::LoongArch(r) => r.name(),
+             Self::Mips(r) => r.name(),
+             Self::S390x(r) => r.name(),
++            Self::Xtensa(r) => r.name(),
+             Self::Bpf(r) => r.name(),
+             Self::Avr(r) => r.name(),
+             Self::Msp430(r) => r.name(),
+@@ -307,6 +313,7 @@ pub fn reg_class(self) -> InlineAsmRegClass {
+             Self::LoongArch(r) => InlineAsmRegClass::LoongArch(r.reg_class()),
+             Self::Mips(r) => InlineAsmRegClass::Mips(r.reg_class()),
+             Self::S390x(r) => InlineAsmRegClass::S390x(r.reg_class()),
++            Self::Xtensa(r) => InlineAsmRegClass::Xtensa(r.reg_class()),
+             Self::Bpf(r) => InlineAsmRegClass::Bpf(r.reg_class()),
+             Self::Avr(r) => InlineAsmRegClass::Avr(r.reg_class()),
+             Self::Msp430(r) => InlineAsmRegClass::Msp430(r.reg_class()),
+@@ -335,6 +342,9 @@ pub fn parse(arch: InlineAsmArch, name: Symbol) -> Result<Self, &'static str> {
+             InlineAsmArch::Mips | InlineAsmArch::Mips64 => {
+                 Self::Mips(MipsInlineAsmReg::parse(name)?)
+             }
++            InlineAsmArch::Xtensa => {
++                Self::Xtensa(XtensaInlineAsmReg::parse(name)?)
++            }
+             InlineAsmArch::S390x => Self::S390x(S390xInlineAsmReg::parse(name)?),
+             InlineAsmArch::SpirV => Self::SpirV(SpirVInlineAsmReg::parse(name)?),
+             InlineAsmArch::Wasm32 | InlineAsmArch::Wasm64 => {
+@@ -369,6 +379,7 @@ pub fn validate(
+             Self::S390x(r) => r.validate(arch, reloc_model, target_features, target, is_clobber),
+             Self::Bpf(r) => r.validate(arch, reloc_model, target_features, target, is_clobber),
+             Self::Avr(r) => r.validate(arch, reloc_model, target_features, target, is_clobber),
++            Self::Xtensa(r) => r.validate(arch, reloc_model, target_features, target, is_clobber),
+             Self::Msp430(r) => r.validate(arch, reloc_model, target_features, target, is_clobber),
+             Self::M68k(r) => r.validate(arch, reloc_model, target_features, target, is_clobber),
+             Self::Err => unreachable!(),
+@@ -393,6 +404,7 @@ pub fn emit(
+             Self::LoongArch(r) => r.emit(out, arch, modifier),
+             Self::Mips(r) => r.emit(out, arch, modifier),
+             Self::S390x(r) => r.emit(out, arch, modifier),
++            Self::Xtensa(r) => r.emit(out, arch, modifier),
+             Self::Bpf(r) => r.emit(out, arch, modifier),
+             Self::Avr(r) => r.emit(out, arch, modifier),
+             Self::Msp430(r) => r.emit(out, arch, modifier),
+@@ -412,6 +424,7 @@ pub fn overlapping_regs(self, mut cb: impl FnMut(InlineAsmReg)) {
+             Self::LoongArch(_) => cb(self),
+             Self::Mips(_) => cb(self),
+             Self::S390x(_) => cb(self),
++            Self::Xtensa(_) => cb(self),
+             Self::Bpf(r) => r.overlapping_regs(|r| cb(Self::Bpf(r))),
+             Self::Avr(r) => r.overlapping_regs(|r| cb(Self::Avr(r))),
+             Self::Msp430(_) => cb(self),
+@@ -436,6 +449,7 @@ pub enum InlineAsmRegClass {
+     S390x(S390xInlineAsmRegClass),
+     SpirV(SpirVInlineAsmRegClass),
+     Wasm(WasmInlineAsmRegClass),
++    Xtensa(XtensaInlineAsmRegClass),
+     Bpf(BpfInlineAsmRegClass),
+     Avr(AvrInlineAsmRegClass),
+     Msp430(Msp430InlineAsmRegClass),
+@@ -459,6 +473,7 @@ pub fn name(self) -> Symbol {
+             Self::S390x(r) => r.name(),
+             Self::SpirV(r) => r.name(),
+             Self::Wasm(r) => r.name(),
++            Self::Xtensa(r) => r.name(),
+             Self::Bpf(r) => r.name(),
+             Self::Avr(r) => r.name(),
+             Self::Msp430(r) => r.name(),
+@@ -484,6 +499,7 @@ pub fn suggest_class(self, arch: InlineAsmArch, ty: InlineAsmType) -> Option<Sel
+             Self::S390x(r) => r.suggest_class(arch, ty).map(InlineAsmRegClass::S390x),
+             Self::SpirV(r) => r.suggest_class(arch, ty).map(InlineAsmRegClass::SpirV),
+             Self::Wasm(r) => r.suggest_class(arch, ty).map(InlineAsmRegClass::Wasm),
++            Self::Xtensa(r) => r.suggest_class(arch, ty).map(InlineAsmRegClass::Xtensa),
+             Self::Bpf(r) => r.suggest_class(arch, ty).map(InlineAsmRegClass::Bpf),
+             Self::Avr(r) => r.suggest_class(arch, ty).map(InlineAsmRegClass::Avr),
+             Self::Msp430(r) => r.suggest_class(arch, ty).map(InlineAsmRegClass::Msp430),
+@@ -516,6 +532,7 @@ pub fn suggest_modifier(
+             Self::S390x(r) => r.suggest_modifier(arch, ty),
+             Self::SpirV(r) => r.suggest_modifier(arch, ty),
+             Self::Wasm(r) => r.suggest_modifier(arch, ty),
++            Self::Xtensa(r) => r.suggest_modifier(arch, ty),
+             Self::Bpf(r) => r.suggest_modifier(arch, ty),
+             Self::Avr(r) => r.suggest_modifier(arch, ty),
+             Self::Msp430(r) => r.suggest_modifier(arch, ty),
+@@ -544,6 +561,7 @@ pub fn default_modifier(self, arch: InlineAsmArch) -> Option<(char, &'static str
+             Self::S390x(r) => r.default_modifier(arch),
+             Self::SpirV(r) => r.default_modifier(arch),
+             Self::Wasm(r) => r.default_modifier(arch),
++            Self::Xtensa(r) => r.default_modifier(arch),
+             Self::Bpf(r) => r.default_modifier(arch),
+             Self::Avr(r) => r.default_modifier(arch),
+             Self::Msp430(r) => r.default_modifier(arch),
+@@ -571,6 +589,7 @@ pub fn supported_types(
+             Self::S390x(r) => r.supported_types(arch),
+             Self::SpirV(r) => r.supported_types(arch),
+             Self::Wasm(r) => r.supported_types(arch),
++            Self::Xtensa(r) => r.supported_types(arch),
+             Self::Bpf(r) => r.supported_types(arch),
+             Self::Avr(r) => r.supported_types(arch),
+             Self::Msp430(r) => r.supported_types(arch),
+@@ -605,6 +624,7 @@ pub fn parse(arch: InlineAsmArch, name: Symbol) -> Result<Self, &'static str> {
+             }
+             InlineAsmArch::Bpf => Self::Bpf(BpfInlineAsmRegClass::parse(name)?),
+             InlineAsmArch::Avr => Self::Avr(AvrInlineAsmRegClass::parse(name)?),
++            InlineAsmArch::Xtensa => Self::Xtensa(XtensaInlineAsmRegClass::parse(name)?),
+             InlineAsmArch::Msp430 => Self::Msp430(Msp430InlineAsmRegClass::parse(name)?),
+             InlineAsmArch::M68k => Self::M68k(M68kInlineAsmRegClass::parse(name)?),
+         })
+@@ -626,6 +646,7 @@ pub fn valid_modifiers(self, arch: InlineAsmArch) -> &'static [char] {
+             Self::S390x(r) => r.valid_modifiers(arch),
+             Self::SpirV(r) => r.valid_modifiers(arch),
+             Self::Wasm(r) => r.valid_modifiers(arch),
++            Self::Xtensa(r) => r.valid_modifiers(arch),
+             Self::Bpf(r) => r.valid_modifiers(arch),
+             Self::Avr(r) => r.valid_modifiers(arch),
+             Self::Msp430(r) => r.valid_modifiers(arch),
+@@ -669,6 +690,7 @@ fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+ /// Set of types which can be used with a particular register class.
+ #[derive(Copy, Clone, Debug, Eq, PartialEq)]
+ pub enum InlineAsmType {
++    I1,
+     I8,
+     I16,
+     I32,
+@@ -692,6 +714,7 @@ pub fn is_integer(self) -> bool {
+ 
+     pub fn size(self) -> Size {
+         Size::from_bytes(match self {
++            Self::I1 => return Size::from_bits(1),
+             Self::I8 => 1,
+             Self::I16 => 2,
+             Self::I32 => 4,
+@@ -713,6 +736,7 @@ pub fn size(self) -> Size {
+ impl fmt::Display for InlineAsmType {
+     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+         match *self {
++            Self::I1 => f.write_str("i1"),
+             Self::I8 => f.write_str("i8"),
+             Self::I16 => f.write_str("i16"),
+             Self::I32 => f.write_str("i32"),
+@@ -806,6 +830,11 @@ pub fn allocatable_registers(
+             wasm::fill_reg_map(arch, reloc_model, target_features, target, &mut map);
+             map
+         }
++        InlineAsmArch::Xtensa => {
++            let mut map = xtensa::regclass_map();
++            xtensa::fill_reg_map(arch, reloc_model, target_features, target, &mut map);
++            map
++        }
+         InlineAsmArch::Bpf => {
+             let mut map = bpf::regclass_map();
+             bpf::fill_reg_map(arch, reloc_model, target_features, target, &mut map);
+diff --git a/compiler/rustc_target/src/asm/xtensa.rs b/compiler/rustc_target/src/asm/xtensa.rs
+new file mode 100644
+index 00000000000..56ca6f12244
+--- /dev/null
++++ b/compiler/rustc_target/src/asm/xtensa.rs
+@@ -0,0 +1,294 @@
++use super::{InlineAsmArch, InlineAsmType};
++use crate::spec::{Target, RelocModel};
++use rustc_macros::HashStable_Generic;
++use rustc_data_structures::fx::FxIndexSet;
++use rustc_span::{sym, Symbol};
++use std::fmt;
++
++def_reg_class! {
++    Xtensa XtensaInlineAsmRegClass {
++        reg,
++        freg,
++        breg,
++    }
++}
++
++impl XtensaInlineAsmRegClass {
++    pub fn valid_modifiers(self, _arch: super::InlineAsmArch) -> &'static [char] {
++        &[]
++    }
++
++    pub fn suggest_class(self, _arch: InlineAsmArch, _ty: InlineAsmType) -> Option<Self> {
++        None
++    }
++
++    pub fn suggest_modifier(
++        self,
++        _arch: InlineAsmArch,
++        _ty: InlineAsmType,
++    ) -> Option<(char, &'static str)> {
++        None
++    }
++
++    pub fn default_modifier(self, _arch: InlineAsmArch) -> Option<(char, &'static str)> {
++        None
++    }
++
++    pub fn supported_types(
++        self,
++        _arch: InlineAsmArch,
++    ) -> &'static [(InlineAsmType, Option<Symbol>)] {
++        match self {
++            Self::reg => types! { _: I8, I16, I32; },
++            Self::breg => types! { bool: I1; },
++            Self::freg => types! { fp: F32; dfpaccel: F64; },
++        }
++    }
++}
++
++// Xtensa has lots of features - macro to reduce boiler plate
++macro_rules! feature {
++    ($fnname:ident, $feature:expr) => {
++        fn $fnname(
++            _arch: InlineAsmArch,
++            _reloc_model: RelocModel,
++            target_features: &FxIndexSet<Symbol>,
++            _target: &Target,
++            _is_clobber: bool,
++        ) -> Result<(), &'static str> {
++            if target_features.contains(&$feature) {
++                Ok(())
++            } else {
++                Err(concat!("target does not support ", stringify!($feature), " registers"))
++            }
++        }
++    };
++}
++
++feature!(has_fp, sym::fp);
++feature!(has_dfpaccel, sym::dfpaccel);
++feature!(has_bool, sym::bool);
++feature!(has_xloop, sym::xloop);
++feature!(has_extendedl32r, sym::extendedl32r);
++feature!(has_s32c1i, sym::s32c1i);
++feature!(has_mac16, sym::mac16);
++feature!(has_windowed, sym::windowed);
++feature!(has_debug, sym::debug);
++feature!(has_memctl, sym::memctl);
++feature!(has_atomctl, sym::atomctl);
++feature!(has_exception, sym::exception);
++feature!(has_highpriinterrupts, sym::highpriinterrupts);
++feature!(has_coprocessor, sym::coprocessor);
++feature!(has_rvector, sym::rvector);
++feature!(has_timerint, sym::timerint);
++feature!(has_interrupt, sym::interrupt);
++feature!(has_prid, sym::prid);
++feature!(has_miscsr, sym::miscsr);
++feature!(has_threadptr, sym::threadptr);
++
++fn has_expstate(
++    _arch: InlineAsmArch,
++    _reloc_model: RelocModel,
++    _target_features: &FxIndexSet<Symbol>,
++    target: &Target,
++    _is_clobber: bool,
++) -> Result<(), &'static str> {
++    match target.cpu.as_ref() {
++        "esp32" => Ok(()),
++        _ => Err("target does not support expstate registers")
++    }
++}
++fn has_gpio_out(
++    _arch: InlineAsmArch,
++    _reloc_model: RelocModel,
++    _target_features: &FxIndexSet<Symbol>,
++    target: &Target,
++    _is_clobber: bool,
++) -> Result<(), &'static str> {
++    match target.cpu.as_ref() {
++        "esp32-s2" => Ok(()),
++        _ => Err("target does not support gpio_out registers")
++    }
++}
++
++// FIXME sometimes there isn't a frame pointer at all?
++fn frame_pointer_is_a7(
++    _arch: InlineAsmArch,
++    _reloc_model: RelocModel,
++    target_features: &FxIndexSet<Symbol>,
++    _target: &Target,
++    _is_clobber: bool,
++) -> bool {
++    target_features.contains(&sym::windowed)
++}
++
++fn frame_pointer_a7(
++    arch: InlineAsmArch,
++    reloc_model: RelocModel,
++    target_features: &FxIndexSet<Symbol>,
++    target: &Target,
++    is_clobber: bool,
++) -> Result<(), &'static str> {
++    if frame_pointer_is_a7(arch, reloc_model, target_features, target, is_clobber) {
++        Err("the frame pointer (a7) cannot be used as an operand for inline asm")
++    } else {
++        Ok(())
++    }
++}
++
++fn frame_pointer_a15(
++    arch: InlineAsmArch,
++    reloc_model: RelocModel,
++    target_features: &FxIndexSet<Symbol>,
++    target: &Target,
++    is_clobber: bool,
++) -> Result<(), &'static str> {
++    if !frame_pointer_is_a7(arch, reloc_model, target_features, target, is_clobber) {
++        Err("the frame pointer (a15) cannot be used as an operand for inline asm")
++    } else {
++        Ok(())
++    }
++}
++
++def_regs! {
++    Xtensa XtensaInlineAsmReg XtensaInlineAsmRegClass {
++        a2: reg = ["a2"],
++        a3: reg = ["a3"],
++        a4: reg = ["a4"],
++        a5: reg = ["a5"],
++        a6: reg = ["a6"],
++        a7: reg = ["a7"] % frame_pointer_a7,
++        a8: reg = ["a8"],
++        a9: reg = ["a9"],
++        a10: reg = ["a10"],
++        a11: reg = ["a11"],
++        a12: reg = ["a12"],
++        a13: reg = ["a13"],
++        a14: reg = ["a14"],
++        a15: reg = ["a15"] % frame_pointer_a15,
++        sar: reg = ["sar"],
++        configid0: reg = ["configid0"], 
++        configid1: reg = ["configid1"],
++        lbeg: reg = ["lbeg"] % has_xloop,
++        lend: reg = ["lend"] % has_xloop,
++        lcount: reg = ["lcount"] % has_xloop,
++        litbase: reg = ["litbase"] % has_extendedl32r,
++        scompare1: reg = ["scompare1"] % has_s32c1i,
++        acclo: reg = ["acclo"] % has_mac16,
++        acchi: reg = ["acchi"] % has_mac16,
++        m0: reg = ["m0"] % has_mac16,
++        m1: reg = ["m1"] % has_mac16,
++        m2: reg = ["m2"] % has_mac16,
++        m3: reg = ["m3"] % has_mac16,
++        windowbase: reg = ["windowbase"] % has_windowed,
++        windowstart: reg = ["windowstart"] % has_windowed,
++        ddr: reg = ["ddr"] % has_debug,
++        ibreakenable: reg = ["ibreakenable"] % has_debug,
++        ibreaka0: reg = ["ibreaka0"] % has_debug,
++        ibreaka1: reg = ["ibreaka1"] % has_debug,
++        dbreaka0: reg = ["dbreaka0"] % has_debug,
++        dbreaka1: reg = ["dbreaka1"] % has_debug,
++        dbreakc0: reg = ["dbreakc0"] % has_debug,
++        dbreakc1: reg = ["dbreakc1"] % has_debug,
++        icount: reg = ["icount"] % has_debug,
++        icountlevel: reg = ["icountlevel"] % has_debug,
++        debugcause: reg = ["debugcause"] % has_debug,
++        memctl: reg = ["memctl"] % has_memctl,
++        atomctl: reg = ["atomctl"] % has_atomctl,
++        ps: reg = ["ps"] % has_exception,
++        epc1: reg = ["epc1"] % has_exception,
++        epc2: reg = ["epc2"] % has_highpriinterrupts,
++        epc3: reg = ["epc3"] % has_highpriinterrupts,
++        epc4: reg = ["epc4"] % has_highpriinterrupts,
++        epc5: reg = ["epc5"] % has_highpriinterrupts,
++        epc6: reg = ["epc6"] % has_highpriinterrupts,
++        epc7: reg = ["epc7"] % has_highpriinterrupts,
++        depc: reg = ["depc"] % has_exception,
++        eps2: reg = ["eps2"] % has_highpriinterrupts,
++        eps3: reg = ["eps3"] % has_highpriinterrupts,
++        eps4: reg = ["eps4"] % has_highpriinterrupts,
++        eps5: reg = ["eps5"] % has_highpriinterrupts,
++        eps6: reg = ["eps6"] % has_highpriinterrupts,
++        eps7: reg = ["eps7"] % has_highpriinterrupts,
++        excsave1: reg = ["excsave1"] % has_exception,
++        excsave2: reg = ["excsave2"] % has_highpriinterrupts,
++        excsave3: reg = ["excsave3"] % has_highpriinterrupts,
++        excsave4: reg = ["excsave4"] % has_highpriinterrupts,
++        excsave5: reg = ["excsave5"] % has_highpriinterrupts,
++        excsave6: reg = ["excsave6"] % has_highpriinterrupts,
++        excsave7: reg = ["excsave7"] % has_highpriinterrupts,
++        exccause: reg = ["exccause"] % has_exception,
++        excvaddr: reg = ["excvaddr"] % has_exception,
++        cpenable: reg = ["cpenable"] % has_coprocessor,
++        vecbase: reg = ["vecbase"] % has_rvector,
++        interrupt: reg = ["interrupt"] % has_interrupt,
++        intclear: reg = ["intclear"] % has_interrupt,
++        intenable: reg = ["intenable"] % has_interrupt,
++        prid: reg = ["prid"] % has_prid,
++        ccount: reg = ["ccount"] % has_timerint,
++        ccompare0: reg = ["ccompare0"] % has_timerint,
++        ccompare1: reg = ["ccompare1"] % has_timerint,
++        ccompare2: reg = ["ccompare2"] % has_timerint,
++        misc0: reg = ["misc0"] % has_miscsr,
++        misc1: reg = ["misc1"] % has_miscsr,
++        misc2: reg = ["misc2"] % has_miscsr,
++        misc3: reg = ["misc3"] % has_miscsr,
++        threadptr: reg = ["threadptr"] % has_threadptr,
++        fcr: reg = ["fcr"] % has_dfpaccel,
++        fsr: reg = ["fsr"] % has_dfpaccel,
++        f64r_lo: reg = ["f64r_lo"] % has_dfpaccel,
++        f64r_hi: reg = ["f64r_hi"] % has_dfpaccel,
++        f64s: reg = ["f64s"] % has_dfpaccel,
++        f0: freg = ["f0"] % has_fp,
++        f1: freg = ["f1"] % has_fp,
++        f2: freg = ["f2"] % has_fp,
++        f3: freg = ["f3"] % has_fp,
++        f4: freg = ["f4"] % has_fp,
++        f5: freg = ["f5"] % has_fp,
++        f6: freg = ["f6"] % has_fp,
++        f7: freg = ["f7"] % has_fp,
++        f8: freg = ["f8"] % has_fp,
++        f9: freg = ["f9"] % has_fp,
++        f10: freg = ["f10"] % has_fp,
++        f11: freg = ["f11"] % has_fp,
++        f12: freg = ["f12"] % has_fp,
++        f13: freg = ["f13"] % has_fp,
++        f14: freg = ["f14"] % has_fp,
++        f15: freg = ["f15"] % has_fp,
++        br: reg = ["br"] % has_bool,
++        b0: breg = ["b0"] % has_bool,
++        b1: breg = ["b1"] % has_bool,
++        b2: breg = ["b2"] % has_bool,
++        b3: breg = ["b3"] % has_bool,
++        b4: breg = ["b4"] % has_bool,
++        b5: breg = ["b5"] % has_bool,
++        b6: breg = ["b6"] % has_bool,
++        b7: breg = ["b7"] % has_bool,
++        b8: breg = ["b8"] % has_bool,
++        b9: breg = ["b9"] % has_bool,
++        b10: breg = ["b10"] % has_bool,
++        b11: breg = ["b11"] % has_bool,
++        b12: breg = ["b12"] % has_bool,
++        b13: breg = ["b13"] % has_bool,
++        b14: breg = ["b14"] % has_bool,
++        b15: breg = ["b15"] % has_bool,
++
++        // Custom TIE extensions - https://en.wikipedia.org/wiki/Tensilica_Instruction_Extension
++        gpio_out: reg = ["gpio_out"] % has_gpio_out,
++        expstate: reg = ["expstate"] % has_expstate,
++        
++        #error = ["a0"] => "a0 is used internally by LLVM and cannot be used as an operand for inline asm",
++        #error = ["sp", "a1"] => "sp is used internally by LLVM and cannot be used as an operand for inline asm",
++    }
++}
++
++impl XtensaInlineAsmReg {
++    pub fn emit(
++        self,
++        out: &mut dyn fmt::Write,
++        _arch: InlineAsmArch,
++        _modifier: Option<char>,
++    ) -> fmt::Result {
++        out.write_str(self.name())
++    }
++}
+diff --git a/compiler/rustc_target/src/spec/mod.rs b/compiler/rustc_target/src/spec/mod.rs
+index 2365dfaf1af..99387460ab3 100644
+--- a/compiler/rustc_target/src/spec/mod.rs
++++ b/compiler/rustc_target/src/spec/mod.rs
+@@ -91,6 +91,7 @@
+ mod windows_msvc_base;
+ mod windows_uwp_gnu_base;
+ mod windows_uwp_msvc_base;
++mod xtensa_base;
+ 
+ /// Linker is called through a C/C++ compiler.
+ #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+@@ -1447,6 +1448,14 @@ fn $module() {
+ 
+     ("nvptx64-nvidia-cuda", nvptx64_nvidia_cuda),
+ 
++    ("xtensa-esp32-none-elf", xtensa_esp32_none_elf),
++    ("xtensa-esp32-espidf", xtensa_esp32_espidf),
++    ("xtensa-esp32s2-none-elf", xtensa_esp32s2_none_elf),
++    ("xtensa-esp32s2-espidf", xtensa_esp32s2_espidf),
++    ("xtensa-esp8266-none-elf", xtensa_esp8266_none_elf),
++    ("xtensa-esp32s3-none-elf", xtensa_esp32s3_none_elf),
++    ("xtensa-esp32s3-espidf", xtensa_esp32s3_espidf),
++
+     ("i686-wrs-vxworks", i686_wrs_vxworks),
+     ("x86_64-wrs-vxworks", x86_64_wrs_vxworks),
+     ("armv7-wrs-vxworks-eabihf", armv7_wrs_vxworks_eabihf),
+diff --git a/compiler/rustc_target/src/spec/xtensa_base.rs b/compiler/rustc_target/src/spec/xtensa_base.rs
+new file mode 100644
+index 00000000000..3020bf32df3
+--- /dev/null
++++ b/compiler/rustc_target/src/spec/xtensa_base.rs
+@@ -0,0 +1,17 @@
++use crate::spec::{LinkerFlavor, Cc, PanicStrategy, RelocModel, TargetOptions, Lld};
++use crate::abi::Endian;
++
++pub fn opts() -> TargetOptions {
++    TargetOptions {
++        os: "none".into(),
++        endian: Endian::Little,
++        c_int_width: "32".into(),
++        linker_flavor: LinkerFlavor::Gnu(Cc::Yes, Lld::No),
++        executables: true,
++        panic_strategy: PanicStrategy::Abort,
++        relocation_model: RelocModel::Static,
++        emit_debug_gdb_scripts: false,
++        atomic_cas: false,
++        ..Default::default()
++    }
++}
+diff --git a/compiler/rustc_target/src/spec/xtensa_esp32_espidf.rs b/compiler/rustc_target/src/spec/xtensa_esp32_espidf.rs
+new file mode 100644
+index 00000000000..20099ec33c8
+--- /dev/null
++++ b/compiler/rustc_target/src/spec/xtensa_esp32_espidf.rs
+@@ -0,0 +1,31 @@
++use crate::spec::{cvs, Target, TargetOptions};
++use crate::abi::Endian;
++
++pub fn target() -> Target {
++    Target {
++        llvm_target: "xtensa-none-elf".into(),
++        pointer_width: 32,
++        data_layout: "e-m:e-p:32:32-i64:64-i128:128-n32".into(),
++        arch: "xtensa".into(),
++
++        options: TargetOptions {
++            endian: Endian::Little,
++            c_int_width: "32".into(),
++            families: cvs!["unix"],
++            os: "espidf".into(),
++            env: "newlib".into(),
++            vendor: "espressif".into(),
++
++            executables: true,
++            cpu: "esp32".into(),
++            linker: Some("xtensa-esp32-elf-gcc".into()),
++
++            // The esp32 only supports native 32bit atomics. However, esp-idf will emulate 64bit atomics 
++            // so we claim a max atomic width of 64 here.
++            max_atomic_width: Some(64),
++            atomic_cas: true,
++
++            ..super::xtensa_base::opts()
++        },
++    }
++}
+\ No newline at end of file
+diff --git a/compiler/rustc_target/src/spec/xtensa_esp32_none_elf.rs b/compiler/rustc_target/src/spec/xtensa_esp32_none_elf.rs
+new file mode 100644
+index 00000000000..1b8cc74dca2
+--- /dev/null
++++ b/compiler/rustc_target/src/spec/xtensa_esp32_none_elf.rs
+@@ -0,0 +1,18 @@
++use crate::spec::{Target, TargetOptions};
++
++pub fn target() -> Target {
++    Target {
++        llvm_target: "xtensa-none-elf".into(),
++        pointer_width: 32,
++        data_layout: "e-m:e-p:32:32-i64:64-i128:128-n32".into(),
++        arch: "xtensa".into(),
++        
++        options: TargetOptions {
++            cpu: "esp32".into(),
++            linker: Some("xtensa-esp32-elf-gcc".into()),
++            max_atomic_width: Some(32),
++            atomic_cas: true,
++            ..super::xtensa_base::opts()
++        },
++    }
++}
+\ No newline at end of file
+diff --git a/compiler/rustc_target/src/spec/xtensa_esp32s2_espidf.rs b/compiler/rustc_target/src/spec/xtensa_esp32s2_espidf.rs
+new file mode 100644
+index 00000000000..d06192df0df
+--- /dev/null
++++ b/compiler/rustc_target/src/spec/xtensa_esp32s2_espidf.rs
+@@ -0,0 +1,39 @@
++use crate::spec::{cvs, Target, TargetOptions};
++use crate::abi::Endian;
++
++pub fn target() -> Target {
++    Target {
++        llvm_target: "xtensa-none-elf".into(),
++        pointer_width: 32,
++        data_layout: "e-m:e-p:32:32-i64:64-i128:128-n32".into(),
++        arch: "xtensa".into(),
++
++        options: TargetOptions {
++            endian: Endian::Little,
++            c_int_width: "32".into(),
++            families: cvs!["unix"],
++            os: "espidf".into(),
++            env: "newlib".into(),
++            vendor: "espressif".into(),
++
++            executables: true,
++            cpu: "esp32-s2".into(),
++            linker: Some("xtensa-esp32s2-elf-gcc".into()),
++
++            // See https://github.com/espressif/rust-esp32-example/issues/3#issuecomment-861054477
++            //
++            // Unlike the original ESP32 chip, ESP32-S2 does not really support atomics.
++            // If the missing hardware instruction ends up being emulated in ESP-IDF, we might want to revert
++            // this change and claim that atomics are supported "in hardware" (even though they would be emulated
++            // by actually trapping the illegal instruction exception handler and calling into an ESP-IDF C emulation code).
++            //
++            // However, for now we simultaneously claim "max_atomic_width: Some(64)" **and** atomic_cas: true,
++            // which should force the compiler to generate libcalls to functions that emulate atomics
++            // and which are already implemented in the ESP-IDF main branch anyway.
++            max_atomic_width: Some(64),
++            atomic_cas: true,
++
++            ..super::xtensa_base::opts()
++        },
++    }
++}
+\ No newline at end of file
+diff --git a/compiler/rustc_target/src/spec/xtensa_esp32s2_none_elf.rs b/compiler/rustc_target/src/spec/xtensa_esp32s2_none_elf.rs
+new file mode 100644
+index 00000000000..44b981145c9
+--- /dev/null
++++ b/compiler/rustc_target/src/spec/xtensa_esp32s2_none_elf.rs
+@@ -0,0 +1,17 @@
++use crate::spec::{Target, TargetOptions};
++
++pub fn target() -> Target {
++    Target {
++        llvm_target: "xtensa-none-elf".into(),
++        pointer_width: 32,
++        data_layout: "e-m:e-p:32:32-i64:64-i128:128-n32".into(),
++        arch: "xtensa".into(),
++        
++        options: TargetOptions {
++            cpu: "esp32-s2".into(),
++            linker: Some("xtensa-esp32s2-elf-gcc".into()),
++            max_atomic_width: Some(32),
++            ..super::xtensa_base::opts()
++        },
++    }
++}
+\ No newline at end of file
+diff --git a/compiler/rustc_target/src/spec/xtensa_esp32s3_espidf.rs b/compiler/rustc_target/src/spec/xtensa_esp32s3_espidf.rs
+new file mode 100644
+index 00000000000..1f6732a1392
+--- /dev/null
++++ b/compiler/rustc_target/src/spec/xtensa_esp32s3_espidf.rs
+@@ -0,0 +1,31 @@
++use crate::spec::{cvs, Target, TargetOptions};
++use crate::abi::Endian;
++
++pub fn target() -> Target {
++    Target {
++        llvm_target: "xtensa-none-elf".into(),
++        pointer_width: 32,
++        data_layout: "e-m:e-p:32:32-i64:64-i128:128-n32".into(),
++        arch: "xtensa".into(),
++
++        options: TargetOptions {
++            endian: Endian::Little,
++            c_int_width: "32".into(),
++            families: cvs!["unix"],
++            os: "espidf".into(),
++            env: "newlib".into(),
++            vendor: "espressif".into(),
++
++            executables: true,
++            cpu: "esp32-s3".into(),
++            linker: Some("xtensa-esp32s3-elf-gcc".into()),
++
++            // The esp32s3 only supports native 32bit atomics. However, esp-idf will emulate 64bit atomics 
++            // so we claim a max atomic width of 64 here.
++            max_atomic_width: Some(64),
++            atomic_cas: true,
++
++            ..super::xtensa_base::opts()
++        },
++    }
++}
+\ No newline at end of file
+diff --git a/compiler/rustc_target/src/spec/xtensa_esp32s3_none_elf.rs b/compiler/rustc_target/src/spec/xtensa_esp32s3_none_elf.rs
+new file mode 100644
+index 00000000000..a655532312f
+--- /dev/null
++++ b/compiler/rustc_target/src/spec/xtensa_esp32s3_none_elf.rs
+@@ -0,0 +1,18 @@
++use crate::spec::{Target, TargetOptions};
++
++pub fn target() -> Target {
++    Target {
++        llvm_target: "xtensa-none-elf".into(),
++        pointer_width: 32,
++        data_layout: "e-m:e-p:32:32-i64:64-i128:128-n32".into(),
++        arch: "xtensa".into(),
++        
++        options: TargetOptions {
++            cpu: "esp32-s3".into(),
++            linker: Some("xtensa-esp32s3-elf-gcc".into()),
++            max_atomic_width: Some(32),
++            atomic_cas: true,
++            ..super::xtensa_base::opts()
++        },
++    }
++}
+\ No newline at end of file
+diff --git a/compiler/rustc_target/src/spec/xtensa_esp8266_none_elf.rs b/compiler/rustc_target/src/spec/xtensa_esp8266_none_elf.rs
+new file mode 100644
+index 00000000000..d2de95564b7
+--- /dev/null
++++ b/compiler/rustc_target/src/spec/xtensa_esp8266_none_elf.rs
+@@ -0,0 +1,17 @@
++use crate::spec::{Target, TargetOptions};
++
++pub fn target() -> Target {
++    Target {
++        llvm_target: "xtensa-none-elf".into(),
++        pointer_width: 32,
++        data_layout: "e-m:e-p:32:32-i64:64-i128:128-n32".into(),
++        arch: "xtensa".into(),
++        
++        options: TargetOptions {
++            cpu: "esp8266".into(),
++            linker: Some("xtensa-lx106-elf-gcc".into()),
++            max_atomic_width: Some(32),
++            ..super::xtensa_base::opts()
++        },
++    }
++}
+\ No newline at end of file
+diff --git a/library/core/src/ffi/mod.rs b/library/core/src/ffi/mod.rs
+index 0488c807604..d18e56e307b 100644
+--- a/library/core/src/ffi/mod.rs
++++ b/library/core/src/ffi/mod.rs
+@@ -241,6 +241,7 @@ fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+         not(target_arch = "aarch64"),
+         not(target_arch = "powerpc"),
+         not(target_arch = "s390x"),
++        not(target_arch = "xtensa"),
+         not(target_arch = "x86_64")
+     ),
+     all(target_arch = "aarch64", any(target_os = "macos", target_os = "ios", target_os = "tvos")),
+@@ -270,6 +271,7 @@ pub struct VaListImpl<'f> {
+         not(target_arch = "aarch64"),
+         not(target_arch = "powerpc"),
+         not(target_arch = "s390x"),
++        not(target_arch = "xtensa"),
+         not(target_arch = "x86_64")
+     ),
+     all(target_arch = "aarch64", any(target_os = "macos", target_os = "ios", target_os = "tvos")),
+@@ -377,6 +379,24 @@ pub struct VaListImpl<'f> {
+     _marker: PhantomData<&'f mut &'f c_void>,
+ }
+ 
++/// xtensa ABI implementation of a `va_list`.
++#[cfg(target_arch = "xtensa")]
++#[repr(C)]
++#[derive(Debug)]
++#[unstable(
++    feature = "c_variadic",
++    reason = "the `c_variadic` feature has not been properly tested on \
++              all supported platforms",
++    issue = "44930"
++)]
++#[lang = "va_list"]
++pub struct VaListImpl<'f> {
++    stk: *mut i32,
++    reg: *mut i32,
++    ndx: i32,
++    _marker: PhantomData<&'f mut &'f i32>,
++}
++
+ /// A wrapper for a `va_list`
+ #[cfg_attr(not(doc), repr(transparent))] // work around https://github.com/rust-lang/rust/issues/90435
+ #[derive(Debug)]
+@@ -392,6 +412,7 @@ pub struct VaList<'a, 'f: 'a> {
+             not(target_arch = "aarch64"),
+             not(target_arch = "powerpc"),
+             not(target_arch = "s390x"),
++            not(target_arch = "xtensa"),
+             not(target_arch = "x86_64")
+         ),
+         all(
+@@ -410,6 +431,7 @@ pub struct VaList<'a, 'f: 'a> {
+             target_arch = "aarch64",
+             target_arch = "powerpc",
+             target_arch = "s390x",
++            target_arch = "xtensa",
+             target_arch = "x86_64"
+         ),
+         any(
+@@ -431,6 +453,7 @@ pub struct VaList<'a, 'f: 'a> {
+         not(target_arch = "aarch64"),
+         not(target_arch = "powerpc"),
+         not(target_arch = "s390x"),
++        not(target_arch = "xtensa"),
+         not(target_arch = "x86_64")
+     ),
+     all(target_arch = "aarch64", any(target_os = "macos", target_os = "ios", target_os = "tvos")),
+@@ -458,6 +481,7 @@ pub fn as_va_list<'a>(&'a mut self) -> VaList<'a, 'f> {
+         target_arch = "aarch64",
+         target_arch = "powerpc",
+         target_arch = "s390x",
++        target_arch = "xtensa",
+         target_arch = "x86_64"
+     ),
+     any(
+diff --git a/src/bootstrap/bootstrap.py b/src/bootstrap/bootstrap.py
+index 149350e62a0..d6480b9e976 100644
+--- a/src/bootstrap/bootstrap.py
++++ b/src/bootstrap/bootstrap.py
+@@ -226,13 +226,16 @@ def format_build_time(duration):
+ 
+ def default_build_triple(verbose):
+     """Build triple as in LLVM"""
+-    # If we're on Windows and have an existing `rustc` toolchain, use `rustc --version --verbose`
+-    # to find our host target triple. This fixes an issue with Windows builds being detected
+-    # as GNU instead of MSVC.
+-    # Otherwise, detect it via `uname`
++    # If the user already has a host build triple with an existing `rustc`
++    # install, use their preference. This fixes most issues with Windows builds
++    # being detected as GNU instead of MSVC.
+     default_encoding = sys.getdefaultencoding()
+ 
+-    if platform_is_win32():
++    if sys.platform == 'darwin':
++        if verbose:
++            print("not using rustc detection as it is unreliable on macOS", file=sys.stderr)
++            print("falling back to auto-detect", file=sys.stderr)
++    else:
+         try:
+             version = subprocess.check_output(["rustc", "--version", "--verbose"],
+                     stderr=subprocess.DEVNULL)
+@@ -250,17 +253,19 @@ def default_build_triple(verbose):
+                 print("falling back to auto-detect", file=sys.stderr)
+ 
+     required = not platform_is_win32()
+-    uname = require(["uname", "-smp"], exit=required)
++    ostype = require(["uname", "-s"], exit=required)
++    cputype = require(['uname', '-m'], exit=required)
+ 
+     # If we do not have `uname`, assume Windows.
+-    if uname is None:
++    if ostype is None or cputype is None:
+         return 'x86_64-pc-windows-msvc'
+ 
+-    kernel, cputype, processor = uname.decode(default_encoding).split()
++    ostype = ostype.decode(default_encoding)
++    cputype = cputype.decode(default_encoding)
+ 
+     # The goal here is to come up with the same triple as LLVM would,
+     # at least for the subset of platforms we're willing to target.
+-    kerneltype_mapper = {
++    ostype_mapper = {
+         'Darwin': 'apple-darwin',
+         'DragonFly': 'unknown-dragonfly',
+         'FreeBSD': 'unknown-freebsd',
+@@ -270,18 +275,17 @@ def default_build_triple(verbose):
+     }
+ 
+     # Consider the direct transformation first and then the special cases
+-    if kernel in kerneltype_mapper:
+-        kernel = kerneltype_mapper[kernel]
+-    elif kernel == 'Linux':
+-        # Apple doesn't support `-o` so this can't be used in the combined
+-        # uname invocation above
+-        ostype = require(["uname", "-o"], exit=required).decode(default_encoding)
+-        if ostype == 'Android':
+-            kernel = 'linux-android'
++    if ostype in ostype_mapper:
++        ostype = ostype_mapper[ostype]
++    elif ostype == 'Linux':
++        os_from_sp = subprocess.check_output(
++            ['uname', '-o']).strip().decode(default_encoding)
++        if os_from_sp == 'Android':
++            ostype = 'linux-android'
+         else:
+-            kernel = 'unknown-linux-gnu'
+-    elif kernel == 'SunOS':
+-        kernel = 'pc-solaris'
++            ostype = 'unknown-linux-gnu'
++    elif ostype == 'SunOS':
++        ostype = 'pc-solaris'
+         # On Solaris, uname -m will return a machine classification instead
+         # of a cpu type, so uname -p is recommended instead.  However, the
+         # output from that option is too generic for our purposes (it will
+@@ -290,34 +294,34 @@ def default_build_triple(verbose):
+         cputype = require(['isainfo', '-k']).decode(default_encoding)
+         # sparc cpus have sun as a target vendor
+         if 'sparc' in cputype:
+-            kernel = 'sun-solaris'
+-    elif kernel.startswith('MINGW'):
++            ostype = 'sun-solaris'
++    elif ostype.startswith('MINGW'):
+         # msys' `uname` does not print gcc configuration, but prints msys
+         # configuration. so we cannot believe `uname -m`:
+         # msys1 is always i686 and msys2 is always x86_64.
+         # instead, msys defines $MSYSTEM which is MINGW32 on i686 and
+         # MINGW64 on x86_64.
+-        kernel = 'pc-windows-gnu'
++        ostype = 'pc-windows-gnu'
+         cputype = 'i686'
+         if os.environ.get('MSYSTEM') == 'MINGW64':
+             cputype = 'x86_64'
+-    elif kernel.startswith('MSYS'):
+-        kernel = 'pc-windows-gnu'
+-    elif kernel.startswith('CYGWIN_NT'):
++    elif ostype.startswith('MSYS'):
++        ostype = 'pc-windows-gnu'
++    elif ostype.startswith('CYGWIN_NT'):
+         cputype = 'i686'
+-        if kernel.endswith('WOW64'):
++        if ostype.endswith('WOW64'):
+             cputype = 'x86_64'
+-        kernel = 'pc-windows-gnu'
+-    elif platform_is_win32():
++        ostype = 'pc-windows-gnu'
++    elif sys.platform == 'win32':
+         # Some Windows platforms might have a `uname` command that returns a
+         # non-standard string (e.g. gnuwin32 tools returns `windows32`). In
+         # these cases, fall back to using sys.platform.
+         return 'x86_64-pc-windows-msvc'
+     else:
+-        err = "unknown OS type: {}".format(kernel)
++        err = "unknown OS type: {}".format(ostype)
+         sys.exit(err)
+ 
+-    if cputype in ['powerpc', 'riscv'] and kernel == 'unknown-freebsd':
++    if cputype in ['powerpc', 'riscv'] and ostype == 'unknown-freebsd':
+         cputype = subprocess.check_output(
+               ['uname', '-p']).strip().decode(default_encoding)
+     cputype_mapper = {
+@@ -351,23 +355,24 @@ def default_build_triple(verbose):
+         cputype = cputype_mapper[cputype]
+     elif cputype in {'xscale', 'arm'}:
+         cputype = 'arm'
+-        if kernel == 'linux-android':
+-            kernel = 'linux-androideabi'
+-        elif kernel == 'unknown-freebsd':
+-            cputype = processor
+-            kernel = 'unknown-freebsd'
++        if ostype == 'linux-android':
++            ostype = 'linux-androideabi'
++        elif ostype == 'unknown-freebsd':
++            cputype = subprocess.check_output(
++                ['uname', '-p']).strip().decode(default_encoding)
++            ostype = 'unknown-freebsd'
+     elif cputype == 'armv6l':
+         cputype = 'arm'
+-        if kernel == 'linux-android':
+-            kernel = 'linux-androideabi'
++        if ostype == 'linux-android':
++            ostype = 'linux-androideabi'
+         else:
+-            kernel += 'eabihf'
++            ostype += 'eabihf'
+     elif cputype in {'armv7l', 'armv8l'}:
+         cputype = 'armv7'
+-        if kernel == 'linux-android':
+-            kernel = 'linux-androideabi'
++        if ostype == 'linux-android':
++            ostype = 'linux-androideabi'
+         else:
+-            kernel += 'eabihf'
++            ostype += 'eabihf'
+     elif cputype == 'mips':
+         if sys.byteorder == 'big':
+             cputype = 'mips'
+@@ -383,14 +388,14 @@ def default_build_triple(verbose):
+         else:
+             raise ValueError('unknown byteorder: {}'.format(sys.byteorder))
+         # only the n64 ABI is supported, indicate it
+-        kernel += 'abi64'
++        ostype += 'abi64'
+     elif cputype == 'sparc' or cputype == 'sparcv9' or cputype == 'sparc64':
+         pass
+     else:
+         err = "unknown cpu type: {}".format(cputype)
+         sys.exit(err)
+ 
+-    return "{}-{}".format(cputype, kernel)
++    return "{}-{}".format(cputype, ostype)
+ 
+ 
+ @contextlib.contextmanager
+diff --git a/tests/assembly/asm/xtensa-types.rs b/tests/assembly/asm/xtensa-types.rs
+new file mode 100644
+index 00000000000..8bdecc4f37b
+--- /dev/null
++++ b/tests/assembly/asm/xtensa-types.rs
+@@ -0,0 +1,140 @@
++// min-llvm-version: 10.0.1
++// assembly-output: emit-asm
++// compile-flags: --target xtensa-esp32-none-elf
++// needs-llvm-components: xtensa
++
++#![feature(no_core, lang_items, rustc_attrs, repr_simd)]
++#![crate_type = "rlib"]
++#![no_core]
++#![allow(asm_sub_register, non_camel_case_types)]
++
++#[rustc_builtin_macro]
++macro_rules! asm {
++    () => {};
++}
++#[rustc_builtin_macro]
++macro_rules! concat {
++    () => {};
++}
++#[rustc_builtin_macro]
++macro_rules! stringify {
++    () => {};
++}
++
++#[lang = "sized"]
++trait Sized {}
++#[lang = "copy"]
++trait Copy {}
++
++type ptr = *const i32;
++
++impl Copy for i8 {}
++impl Copy for i16 {}
++impl Copy for i32 {}
++impl Copy for f32 {}
++impl Copy for f64 {}
++impl Copy for ptr {}
++
++extern "C" {
++    fn extern_func();
++}
++
++// Hack to avoid function merging
++extern "Rust" {
++    fn dont_merge(s: &str);
++}
++
++// CHECK-LABEL: sym_fn:
++// CHECK: #APP
++// CHECK: call4 extern_func
++// CHECK: #NO_APP
++#[no_mangle]
++pub unsafe fn sym_fn() {
++    asm!("call4 {}", sym extern_func);
++}
++
++macro_rules! check_general_reg {
++    ($func:ident $ty:ident $class:ident $mov:literal) => {
++        #[no_mangle]
++        pub unsafe fn $func(x: $ty) -> $ty {
++            dont_merge(stringify!($func));
++
++            let y;
++            asm!(concat!($mov, " {}, {}"), out($class) y, in($class) x);
++            y
++        }
++    };
++}
++
++// CHECK-LABEL: reg_i8:
++// CHECK: #APP
++// CHECK: mov a{{[0-9]+}}, a{{[0-9]+}}
++// CHECK: #NO_APP
++check_general_reg!(reg_i8 i8 reg "mov");
++
++// CHECK-LABEL: reg_i16:
++// CHECK: #APP
++// CHECK: mov a{{[0-9]+}}, a{{[0-9]+}}
++// CHECK: #NO_APP
++check_general_reg!(reg_i16 i16 reg "mov");
++
++// CHECK-LABEL: reg_i32:
++// CHECK: #APP
++// CHECK: mov a{{[0-9]+}}, a{{[0-9]+}}
++// CHECK: #NO_APP
++check_general_reg!(reg_i32 i32 reg "mov");
++
++// CHECK-LABEL: reg_ptr:
++// CHECK: #APP
++// CHECK: mov a{{[0-9]+}}, a{{[0-9]+}}
++// CHECK: #NO_APP
++check_general_reg!(reg_ptr ptr reg "mov");
++
++// CHECK-LABEL: freg_f32:
++// CHECK: #APP
++// CHECK: mov.s f{{[0-9]+}}, f{{[0-9]+}}
++// CHECK: #NO_APP
++check_general_reg!(freg_f32 f32 freg "mov.s");
++
++macro_rules! check_explicit_reg {
++    ($func:ident $ty:ident $reg:tt $mov:literal) => {
++        #[no_mangle]
++        pub unsafe fn $func(x: $ty) -> $ty {
++            dont_merge(stringify!($func));
++
++            let y;
++            asm!(concat!($mov, " ", $reg, ", ", $reg), lateout($reg) y, in($reg) x);
++            y
++        }
++    };
++}
++
++// CHECK-LABEL: a5_i8:
++// CHECK: #APP
++// CHECK: mov a5, a5
++// CHECK: #NO_APP
++check_explicit_reg!(a5_i8 i8 "a5" "mov");
++
++// CHECK-LABEL: a5_i16:
++// CHECK: #APP
++// CHECK: mov a5, a5
++// CHECK: #NO_APP
++check_explicit_reg!(a5_i16 i16 "a5" "mov");
++
++// CHECK-LABEL: a0_i32:
++// CHECK: #APP
++// CHECK: mov a5, a5
++// CHECK: #NO_APP
++check_explicit_reg!(a5_i32 i32 "a5" "mov");
++
++// CHECK-LABEL: a5_ptr:
++// CHECK: #APP
++// CHECK: mov a5, a5
++// CHECK: #NO_APP
++check_explicit_reg!(a5_ptr ptr "a5" "mov");
++
++// CHECK-LABEL: f0_f32:
++// CHECK: #APP
++// CHECK: mov.s f0, f0
++// CHECK: #NO_APP
++check_explicit_reg!(f0_f32 f32 "f0" "mov.s");
