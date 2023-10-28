@@ -19,14 +19,22 @@
     ...
   }:
     flake-utils.lib.eachDefaultSystem (system: let
-      rust-esp8266-overlay = final: prev: {
+      rust-xtensa-overlay = final: prev: {
         llvmPackages_xtensa = prev.llvmPackages_16.override {
-          monorepoSrc = prev.fetchFromGitHub {
-            owner = "espressif";
-            repo = "llvm-project";
-            rev = "c8306cc404d36b072b3aee975495c300c15c56fb";
-            sha256 = "sha256-oHLPAQeBHFPwPncNRUcaVOA7qeuAehrMNwiwppPyeNs=";
-          };
+          monorepoSrc = let
+            espressif-llvm = prev.fetchFromGitHub {
+              owner = "espressif";
+              repo = "llvm-project";
+              rev = "0b255ec2fb67b3469af4b7e1336a64ed60f4e251";
+              sha256 = "sha256-bnSnyPq30Cc6bz6T/FVMgdBk6HGmgTTgRirJMBWDC0c=";
+            };
+          in
+            final.runCommand "espressif-llvm-prepatched" {} ''
+              cp -r ${espressif-llvm} $out
+              chmod -R u+w $out
+              cd $out/llvm
+              patch --strip=1 < ${./nix-llvm-prepatch.patch}
+            '';
         };
 
         rust-esp = prev.callPackage ./esp-rs-rust.nix {
@@ -40,12 +48,12 @@
       pkgs = import nixpkgs {
         inherit system;
         overlays = [
-          rust-esp8266-overlay
+          rust-xtensa-overlay
           rust-overlay.overlays.default
         ];
       };
     in {
-      packages.llvm = pkgs.llvmPackages_xtensa.llvm;
+      overlays.default = rust-xtensa-overlay;
 
       devShells.default = pkgs.mkShell {
         buildInputs = [
@@ -58,6 +66,7 @@
           pkgs.minicom
           pkgs.probe-rs
           pkgs.rust-esp.packages.stable.cargo
+          pkgs.rust-esp.packages.stable.rustc
         ];
       };
     });
